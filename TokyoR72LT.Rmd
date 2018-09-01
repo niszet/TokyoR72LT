@@ -21,7 +21,6 @@ pandoc_args: [
 ]
 ---
 
----
 
 ```{r setup, include=FALSE}
 # knitr::opts_chunk$set(echo = TRUE, out.width = "40%", out.height = "40%")
@@ -56,8 +55,8 @@ Blog URL: <https://niszet.hatenablog.com/>
 技術書典5にniszet工房として出ます…
 
 
-# 集計する
-## 分析の流れ
+# 可視化の前に集計する...
+## 分析の流れ(?)
 
 とりあえずdata.frameが手に入ったとして（その前に色々やる）、
 
