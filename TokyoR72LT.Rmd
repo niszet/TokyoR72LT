@@ -54,6 +54,8 @@ Blog URL: <https://niszet.hatenablog.com/>
 普段は回路設計などしています\
 技術書典5にniszet工房として出ます…
 
+Rradio.12
+
 
 # 可視化の前に集計・要約する...
 ## 分析の流れ(?)
@@ -74,7 +76,8 @@ summary(iris)
 
 ## 普通のsummaryの落とし穴
 
-NA(欠測) の存在に気づけない
+NA(欠測) の存在に気づけない(メッセージ等なく表示されてしまう)\
+結果の使い回しが出来ない（data.frameではない）
 
 ```{r echo=TRUE, comment="#"}
 mean(airquality$Ozone) # NAがあるので結果はNA
@@ -112,7 +115,7 @@ knitr::kable(skimr::skim_to_wide(mtcars))
 
 ## skimrパッケージの注意点 {#skimr_notice_1}
 
-* `skimr::skim()`の場合、Windows環境ではヒストグラムが表示できない。
+* Windows上のR Markdown中では`skimr::skim()`してもヒストグラムが表示できない。
 
 ```{r comment="#"}
 # inline_hist()`はベクトルを渡すとヒストグラムを描く関数
