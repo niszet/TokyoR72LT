@@ -1,0 +1,223 @@
+---
+title: "TokyoR 72 LT<BR>skimrとsummarytoolsパッケージの紹介"
+author: "niszet"
+date: "`r format(Sys.time(),'%Y/%m/%d')`"
+output:
+  revealjs::revealjs_presentation:
+    reveal_option:
+      slideNumber: true
+      center: true
+      width: 1440
+      height: 900
+      mouseWheel: true
+#    incremental: true
+    theme: blood
+    highlight: kate
+    css: "for-revealjs_blood.css"
+#  pandoc_args: [
+#      '--from', #'+autolink_bare_uris+tex_math_single_backslash-implicit_figures'
+#  ]
+---
+
+```{r setup, include=FALSE}
+# knitr::opts_chunk$set(echo = TRUE, out.width = "40%", out.height = "40%")
+knitr::opts_chunk$set(echo = TRUE) 
+
+library(revealjs)
+library(ggplot2)
+library(dplyr)
+# library(tidyverse)
+library(magrittr)
+library(scales)
+#library(ggbode)
+library(gridExtra)
+library(skimr)
+library(summarytools)
+library(Hmisc)
+```
+
+
+# 自己紹介{#self_infro}
+
+## こんな人です{#who_am_i}
+名前：niszet*  
+Rおじさん歴：3年目？  
+趣味：R、楽器(?)、そろそろ自作HWを…
+![self](Figs/self.jpg)
+
+https://niszet.hatenablog.com/
+
+
+普段は回路設計などしています\
+技術書典5に出ます…
+
+
+# 集計する
+## 分析の流れ
+とりあえずdata.frameが手に入ったとして、
+1. 値の範囲や平均・分散や欠測の有無の確認など
+2. プロットしてデータを見ていく…
+
+プロットする前にデータ全体を俯瞰(概観)出来れば便利
+
+
+## 普通のsummary
+```{r echo=TRUE}
+summary(iris)
+```
+
+## 普通のsummaryの落とし穴
+NA(欠測) の存在に気づけない
+```{r echo=TRUE}
+mean(airquality$Ozone) # NAがあるので結果はNA
+sum(is.na(airquality$Ozone)) # 37個もある
+mean(airquality$Ozone, na.rm = T) # NAを取り除けば結果は出る
+summary(airquality)[4] # summaryの結果と一致
+```
+
+# skimrパッケージ
+## skimr::skim()を使う
+`summary()`の強力版。各変数ごとに、
+
+* 型 (numeric, factor, etc)
+* 要素数（NAの数もmissingとして得られる）
+* mean、sd、min, 25%, median, 75%, max
+* ヒストグラム(numericのみ)
+
+を見れる。表示項目のカスタマイズもできる。
+
+## 実際に見たほうが早い
+
+```{r}
+# 見やすさのためnumericだけのデータセット、mtcarsを使う
+knitr::kable(skimr::skim_to_wide(mtcars))
+```
+
+
+## 注意点 {#skimr_notice_1}
+
+* `skimr::skim()`の場合、Windows環境ではヒストグラムが表示できない。
+
+```{r}
+# inline_hist()`はベクトルを渡すとヒストグラムを描く関数
+skimr::inline_hist(iris$Sepal.Length)
+```
+
+* data.frame形式であれば`knitr::kable()`で表示すれば文字化けしない。
+  * `skim_to_wide()`は見たままの形のdata.frameで出力する
+
+```{r}
+# 文字化けしない
+knitr::kable(skimr::inline_hist(iris$Sepal.Length))
+```
+
+* `skimr::fix_windows_histograms()`という関数があるが、Localeを変えてしまう＆対話的な使用が前提なのでお勧めしない。
+
+
+
+## skim()の中身
+```{r}
+head(skimr::skim(iris), n = 3)
+```
+
+long形式のtibbleを`skimr:::print.skim_df()`で整形して表示してる。
+
+そのため、`%>%`で次の関数に渡すこともできる。\
+`skimr()`の結果を表示しつつ次に渡すなら`skim_tee()`を使う。
+
+
+## skim亜種つづき
+```{r}
+# listを返す
+skimr::skim_to_list(iris) %>% head(n=1)
+
+# wide形式のtibbleを返す
+skimr::skim_to_wide(iris) %>% head(n=3)
+```
+
+## 表示のカスタマイズ
+`skimr::skim()`は表示のカスタマイズ性が高い。
+
+詳しくはvignettesやhelpを読むべし。
+
+```r
+# パッケージのvignettes一覧: 
+browseVignettes("skimr")
+
+# 個別のvignette:
+vignette("vignetteUsing_skimr")
+vignette("Skimr_defaults")
+vignette("Using_fonts")
+vignette("Supporting_additional_objects")
+```
+
+
+
+## カスタマイズ例 {#skimr_custom_1}
+`skim_with()`で型ごとにどの関数を使用するか設定を更新する。
+
+```{r}
+# numericにsum()をsumという列名追加。既存の関数は消える
+skim_with(numeric=list(sum=sum), append=FALSE)
+
+# 存在しない項目はNAになる
+knitr::kable(skim_to_wide(head(iris[-4], n=3)))
+```
+
+* `skim_format_defaults()`でデフォルト設定に戻することが出来る
+* `get_skimmers()`で型ごとに設定された関数をlistで得られる
+  * これをベースにカスタマイズすればよい。
+
+
+## カスタマイズ例2 {#skimr_custom_2}
+* `skim_format()`で表示桁数などをカスタマイズできる。
+* `show_formats()`で設定されているフォーマットの確認が出来る。
+* `skim_format_defaults()`で元に戻せる
+
+```{r}
+skim_format(numeric = list(digits = 1))
+kable(skim_to_wide(iris[-5]))
+```
+
+
+# summarytools
+## 見栄えが良い
+* `dfSummary()`で`skimr::skim()`と同様に強力な`summary()`を使える。
+* RStudio上で`view()`するとViewerペインを使って見やすく表示できる
+  * 大文字の`View()`ではないので注意。
+* factorの割合が見やすい
+* カスタマイズ性は低い
+
+
+## これも見たほうがはやい
+```{r}
+view(dfSummary(iris[,c(1,5)], graph.magnif=3, 
+               varnumbers =FALSE, omit.headings=TRUE),
+     method="render", footnote = NA, report.title=NA)
+```
+スライドに埋め込むにはGraph列が見づらい
+
+## summarytoolsのメリット {#merit_of_summarytools}
+* factorの割合が見えるので便利
+* ヒストグラムが見やすい
+* NAの数もわかる。
+* Viewerで見るともう少し見やすいが、ほかの数値はちょっと見づらい気も。
+
+
+# まとめ
+## skimrとsummarytoolsは使い分けるとよさそう
+強力な`summary()`としてどちらも有用。
+
+* skimr
+  * ドキュメントにもいい感じに埋め込めて便利
+  * カスタマイズ性が高いので自分の好みの出力形式にできる
+
+* summarytools
+  * factorが多いデータならこちらの方が良い。  
+  * 対話的に使うには便利。ドキュメントには入れづらい。
+
+
+## EOF
+![self](Figs/self.jpg)
+
+Enjoy!!
