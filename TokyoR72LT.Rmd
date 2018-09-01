@@ -7,16 +7,20 @@ output:
     reveal_option:
       slideNumber: true
       center: true
-      width: 1440
+      width: 1200
       height: 900
+#      width: 1440
+#      height: 900
       mouseWheel: true
 #    incremental: true
     theme: blood
-    highlight: kate
+    highlight: zenburn # tango # haddock # zenburn #espresso # pygments # monochrome #kate
     css: "for-revealjs_blood.css"
-#  pandoc_args: [
-#      '--from', #'+autolink_bare_uris+tex_math_single_backslash-implicit_figures'
-#  ]
+pandoc_args: [
+  '--from', 'markdown+autolink_bare_uris+tex_math_single_backslash-implicit_figures'
+]
+---
+
 ---
 
 ```{r setup, include=FALSE}
@@ -42,33 +46,38 @@ library(Hmisc)
 ## こんな人です{#who_am_i}
 名前：niszet*  
 Rおじさん歴：3年目？  
-趣味：R、楽器(?)、そろそろ自作HWを…
+趣味：R、楽器(?)、そろそろ自作HWをですね…
+
 ![self](Figs/self.jpg)
 
-https://niszet.hatenablog.com/
-
+Blog URL: <https://niszet.hatenablog.com/>
 
 普段は回路設計などしています\
-技術書典5に出ます…
+技術書典5にniszet工房として出ます…
 
 
 # 集計する
 ## 分析の流れ
-とりあえずdata.frameが手に入ったとして、
+
+とりあえずdata.frameが手に入ったとして（その前に色々やる）、
+
 1. 値の範囲や平均・分散や欠測の有無の確認など
 2. プロットしてデータを見ていく…
 
 プロットする前にデータ全体を俯瞰(概観)出来れば便利
 
 
-## 普通のsummary
+## (普通の)summaryを使う
+
 ```{r echo=TRUE}
 summary(iris)
 ```
 
 ## 普通のsummaryの落とし穴
+
 NA(欠測) の存在に気づけない
-```{r echo=TRUE}
+
+```{r echo=TRUE, comment="#"}
 mean(airquality$Ozone) # NAがあるので結果はNA
 sum(is.na(airquality$Ozone)) # 37個もある
 mean(airquality$Ozone, na.rm = T) # NAを取り除けば結果は出る
@@ -76,7 +85,9 @@ summary(airquality)[4] # summaryの結果と一致
 ```
 
 # skimrパッケージ
+
 ## skimr::skim()を使う
+
 `summary()`の強力版。各変数ごとに、
 
 * 型 (numeric, factor, etc)
@@ -86,19 +97,25 @@ summary(airquality)[4] # summaryの結果と一致
 
 を見れる。表示項目のカスタマイズもできる。
 
-## 実際に見たほうが早い
+```r
+# 早速入れよう
+devtools::install_github("ropenscilabs/skimr")
+```
 
-```{r}
+
+## 結果を実際に見たほうが早い．．．
+
+```{r comment="#"}
 # 見やすさのためnumericだけのデータセット、mtcarsを使う
 knitr::kable(skimr::skim_to_wide(mtcars))
 ```
 
 
-## 注意点 {#skimr_notice_1}
+## skimrパッケージの注意点 {#skimr_notice_1}
 
 * `skimr::skim()`の場合、Windows環境ではヒストグラムが表示できない。
 
-```{r}
+```{r comment="#"}
 # inline_hist()`はベクトルを渡すとヒストグラムを描く関数
 skimr::inline_hist(iris$Sepal.Length)
 ```
@@ -106,7 +123,7 @@ skimr::inline_hist(iris$Sepal.Length)
 * data.frame形式であれば`knitr::kable()`で表示すれば文字化けしない。
   * `skim_to_wide()`は見たままの形のdata.frameで出力する
 
-```{r}
+```{r comment="#"}
 # 文字化けしない
 knitr::kable(skimr::inline_hist(iris$Sepal.Length))
 ```
@@ -114,8 +131,8 @@ knitr::kable(skimr::inline_hist(iris$Sepal.Length))
 * `skimr::fix_windows_histograms()`という関数があるが、Localeを変えてしまう＆対話的な使用が前提なのでお勧めしない。
 
 
-
 ## skim()の中身
+
 ```{r}
 head(skimr::skim(iris), n = 3)
 ```
@@ -125,8 +142,8 @@ long形式のtibbleを`skimr:::print.skim_df()`で整形して表示してる。
 そのため、`%>%`で次の関数に渡すこともできる。\
 `skimr()`の結果を表示しつつ次に渡すなら`skim_tee()`を使う。
 
-
 ## skim亜種つづき
+
 ```{r}
 # listを返す
 skimr::skim_to_list(iris) %>% head(n=1)
@@ -136,6 +153,7 @@ skimr::skim_to_wide(iris) %>% head(n=3)
 ```
 
 ## 表示のカスタマイズ
+
 `skimr::skim()`は表示のカスタマイズ性が高い。
 
 詳しくはvignettesやhelpを読むべし。
@@ -154,6 +172,7 @@ vignette("Supporting_additional_objects")
 
 
 ## カスタマイズ例 {#skimr_custom_1}
+
 `skim_with()`で型ごとにどの関数を使用するか設定を更新する。
 
 ```{r}
@@ -170,6 +189,7 @@ knitr::kable(skim_to_wide(head(iris[-4], n=3)))
 
 
 ## カスタマイズ例2 {#skimr_custom_2}
+
 * `skim_format()`で表示桁数などをカスタマイズできる。
 * `show_formats()`で設定されているフォーマットの確認が出来る。
 * `skim_format_defaults()`で元に戻せる
@@ -180,8 +200,10 @@ kable(skim_to_wide(iris[-5]))
 ```
 
 
-# summarytools
+# summarytoolsパッケージ
+
 ## 見栄えが良い
+
 * `dfSummary()`で`skimr::skim()`と同様に強力な`summary()`を使える。
 * RStudio上で`view()`するとViewerペインを使って見やすく表示できる
   * 大文字の`View()`ではないので注意。
@@ -190,6 +212,7 @@ kable(skim_to_wide(iris[-5]))
 
 
 ## これも見たほうがはやい
+
 ```{r}
 view(dfSummary(iris[,c(1,5)], graph.magnif=3, 
                varnumbers =FALSE, omit.headings=TRUE),
@@ -198,14 +221,16 @@ view(dfSummary(iris[,c(1,5)], graph.magnif=3,
 スライドに埋め込むにはGraph列が見づらい
 
 ## summarytoolsのメリット {#merit_of_summarytools}
+
 * factorの割合が見えるので便利
 * ヒストグラムが見やすい
-* NAの数もわかる。
-* Viewerで見るともう少し見やすいが、ほかの数値はちょっと見づらい気も。
+* `NA`の数もわかる。
+* Viewer Paneで見るともう少し見やすいが、ほかの数値はちょっと見づらい気も。
 
 
 # まとめ
 ## skimrとsummarytoolsは使い分けるとよさそう
+
 強力な`summary()`としてどちらも有用。
 
 * skimr
