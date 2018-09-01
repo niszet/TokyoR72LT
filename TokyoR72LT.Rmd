@@ -98,7 +98,7 @@ summary(airquality)[4] # summaryの結果と一致
 
 ```r
 # 早速入れよう
-devtools::install_github("ropenscilabs/skimr")
+install.packages("skimr")
 ```
 
 
