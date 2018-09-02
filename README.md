@@ -1,1 +1,1 @@
-"# TokyoR72LT" 
+# TokyoR72 のLT資料です
